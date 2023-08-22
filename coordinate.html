@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Coordinate</title>
+</head>
+<body>
+<canvas id="canvas" width="600" height="600" style="background-color: aqua"></canvas>
+</body>
+<script src="./js/initShader.js"></script>
+<script>
+const canvas = document.getElementById('canvas')
+const gl = canvas.getContext('webgl')
+
+//顶点着色器源码
+const vertexShaderSource = `
+    //attribute声明vec4类型变量apos
+    attribute vec4 apos;
+    void main() {
+        gl_Position = apos;
+    }
+`
+//片元着色器源码
+const fragShaderSource = `
+    void main() {
+        gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0);
+    }
+`
+//初始化着色器
+const program = initShader(gl, vertexShaderSource, fragShaderSource)
+//获取顶点着色器的位置变量apos
+const aposLocation = gl.getAttribLocation(program, 'apos')
+
+//9个元素构建三个顶点的xyz坐标值
+const data = new Float32Array([
+    0, 0, 1,
+    0, 1, 0,
+    1, 0, 0
+])
+
+//创建缓冲区对象
+const buffer = gl.createBuffer()
+//绑定缓冲区对象
+gl.bindBuffer(gl.ARRAY_BUFFER, buffer)
+//顶点数组data数据传入缓冲区
+gl.bufferData(gl.ARRAY_BUFFER, data, gl.STATIC_DRAW)
+//第二个代码案例vertexAttribPointer方法的第二个参数是2，这里是3(3个为一组)
+gl.vertexAttribPointer(aposLocation, 3, gl.FLOAT, false, 0, 0)
+//允许数据传递
+gl.enableVertexAttribArray(aposLocation)
+//开始绘制图形，使用TRIANGLES模式，三点构成一个平面
+gl.drawArrays(gl.TRIANGLES, 0, 3)
+
+
+
+
+
+
+
+
+</script>
+</html>

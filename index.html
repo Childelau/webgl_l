@@ -3,101 +3,66 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+    <title>webgl</title>
 </head>
-<body onload="main()">
-    <canvas id="canvas" width="600px" height="400px"></canvas>
+<body>
+    <canvas id="canvas" width="600" height="400" style="background-color: blue;"></canvas>
 </body>
 <script>
-function main() {
-    const canvas = document.querySelector('#canvas')
-    const gl = canvas.getContext('webgl')
+const canvas = document.getElementById('canvas')
+const gl = canvas.getContext('webgl')
 
-    if (!gl) {
-        alert('you explorer do not support webgl')
-    }
-
-    gl.clearColor(0.0, 0.0, 0.0, 1.0)
-    gl.clear(gl.COLOR_BUFFER_BIT)
-
-    gl.drawColor(1.0, 1.0, 1.0, 1.0)
-    gl.drawPoint(0,0,0,10)
-
-    const vsSource = `
-    attribute vec4 aVertexPosition;
-
-    uniform mat4 uModelViewMatrix;
-    uniform mat4 uProjectionMatrix;
-
+// 顶点着色器
+// const vertexShaderSource = document.getElementById('vertexShader').innerText
+// const fragmentShaderSource = document.getElementById('fragmentShader').innerText
+const vertexShaderSource = `
     void main() {
-      gl_Position = uProjectionMatrix * uModelViewMatrix * aVertexPosition;
+        gl_PointSize=50.0;
+        gl_Position =vec4(0.0,0.0,0.0,1.0);
     }
-    `;
-    const fsSource = `
-        void main() {
-        gl_FragColor = vec4(1.0, 1.0, 1.0, 1.0);
-        }
-    `;
-
-function initShaderProgram(gl, vsSource, fsSource) {
-    const vertexShader = loadShader(gl, gl.VERTEX_SHADER, vsSource);
-    const fragmentShader = loadShader(gl, gl.FRAGMENT_SHADER, fsSource);
-
-    // 创建着色器程序
-
-    const shaderProgram = gl.createProgram();
-    gl.attachShader(shaderProgram, vertexShader);
-    gl.attachShader(shaderProgram, fragmentShader);
-    gl.linkProgram(shaderProgram);
-
-    // 如果创建失败，alert
-    if (!gl.getProgramParameter(shaderProgram, gl.LINK_STATUS)) {
-        alert(
-            "Unable to initialize the shader program: " +
-            gl.getProgramInfoLog(shaderProgram),
-        );
-        return null;
+`
+const fragmentShaderSource = `
+    void main() {
+        gl_FragColor = vec4(1.0,0.0,0.0,1.0);
     }
+`
 
-    return shaderProgram;
-}
+//初始化着色器
+function initShader(gl, vertexShaderSource, fragmentShaderSource) {
+    //创建顶点着色器对象
+    const vertexShader = gl.createShader(gl.VERTEX_SHADER)
+    //创建片元着色器对象
+    const fragmentShader = gl.createShader(gl.FRAGMENT_SHADER)
+    //引入顶点、片元着色器源代码
+    gl.shaderSource(vertexShader,vertexShaderSource)
+    gl.shaderSource(fragmentShader,fragmentShaderSource)
+    //编译顶点、片元着色器
+    gl.compileShader(vertexShader)
+    gl.compileShader(fragmentShader)
 
-//
-// 创建指定类型的着色器，上传 source 源码并编译
-//
-function loadShader(gl, type, source) {
-    const shader = gl.createShader(type);
+    //创建程序对象program
+    const program = gl.createProgram()
+    //附着顶点着色器和片元着色器到program
+    gl.attachShader(program, vertexShader)
+    gl.attachShader(program, fragmentShader)
+    //链接program
+    gl.linkProgram(program)
+    //使用program
+    gl.useProgram(program)
+    //返回程序program对象
 
-    // Send the source to the shader object
-
-    gl.shaderSource(shader, source);
-
-    // Compile the shader program
-
-    gl.compileShader(shader);
-
-    // See if it compiled successfully
-
-    if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-        alert(
-            "An error occurred compiling the shaders: " + gl.getShaderInfoLog(shader),
-        );
-        gl.deleteShader(shader);
-        return null;
-    }
-
-    return shader;
-}
-
+    return program
 
 
 }
-    
+
+const program = initShader(gl, vertexShaderSource, fragmentShaderSource)
+//开始绘制，显示器显示结果
+gl.drawArrays(gl.POINTS, 0, 1)
+
+
+
+
+
 </script>
-
-
-
-
-
-
 </html>
