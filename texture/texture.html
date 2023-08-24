@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Texture</title>
+</head>
+<body>
+<canvas id="canvas" width="600" height="600"></canvas>
+</body>
+<script src="../js/initShader.js"></script>
+<script>
+const canvas = document.getElementById('canvas')
+const gl = canvas.getContext('webgl')
+
+const vertexShaderSource = `
+    attribute vec4 a_Position;//顶点位置坐标
+    attribute vec2 a_TextCoord;//纹理坐标
+    varying vec2 v_TextCoord;//插值后纹理坐标
+    void main() {
+        gl_Position = a_Position;
+        //纹理坐标插值计算
+        v_TextCoord = a_TextCoord;
+    }
+`
+const fragShaderSource = `
+    //所有float类型数据的精度是highp
+    precision highp float;
+    //接收插值后的纹理坐标
+    varying vec2 v_TextCoord;
+    //纹理图片像素数据
+    uniform sampler2D u_Sampler;
+    void main() {
+        gl_FragColor = texture2D(u_Sampler, v_TextCoord)
+    }
+`
+
+const program = initShader(gl, vertexShaderSource, fragShaderSource)
+/**
+ * 从program对象获取相关的变量
+ * attribute变量声明的方法使用getAttribLocation()方法
+ * uniform变量声明的方法使用getAttribLocation()方法
+ **/
+const a_Position = gl.getAttribLocation(program, 'a_Position')
+const a_TextCoord = gl.getAttribLocation(program, 'a_TextCoord')
+const u_Sampler = gl.getUniformLocation(program, 'u_Sampler')
+
+const data = new Float32Array([
+    -0.5, 0.5,//左上角——v0
+    -0.5, -0.5,//左下角——v1
+    0.5, 0.5,//右上角——v2
+    0.5, -0.5//右下角——v3
+])
+
+const textureDate = new Float32Array([
+    0,1,//左上角--uv0
+    0,0,//左下角--uv1
+    1,1,//右上角--uv2
+    1,0//右下角--uv3
+])
+/**
+ * 加载纹理图像像素数据
+ **/
+
+
+
+
+
+
+
+
+
+
+
+
+
+</script>
+</html>
