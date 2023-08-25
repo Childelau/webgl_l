@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Switch2</title>
+</head>
+<body>
+<canvas id="canvas" width="600" height="600" style="background-color: #0d72da"></canvas>
+</body>
+<script src="../js/initShader.js"></script>
+<script>
+    const canvas = document.getElementById('canvas')
+    const gl = canvas.getContext('webgl')
+
+    const vertexShaderSource = `
+    attribute vec4 apos;
+    void main() {
+        gl_Position = apos;
+    }
+`
+    const fragShaderSource = `
+    precision lowp float;
+    //declare a color variable
+    uniform vec4 u_Color;
+    void main() {
+        gl_FragColor = u_Color;
+    }
+`
+
+    const program = initShader(gl, vertexShaderSource, fragShaderSource)
+    const aposLocation = gl.getAttribLocation(program, 'apos')
+    const u_Color = gl.getUniformLocation(program, 'u_Color')
+
+    const data = new Float32Array([
+        .5,.5,
+        -.5,.5,
+        -.5,-.5,
+        .5,-.5,
+
+        .3,.3,
+        -.3,.3,
+        -.3,-.3,
+        .3,-.3
+    ])
+
+    const buffer = gl.createBuffer()
+    gl.bindBuffer(gl.ARRAY_BUFFER, buffer)
+    gl.bufferData(gl.ARRAY_BUFFER, data, gl.STATIC_DRAW)
+    gl.vertexAttribPointer(aposLocation, 2, gl.FLOAT, false, 0, 0)
+    gl.enableVertexAttribArray(aposLocation)
+
+    // 传入光的颜色和方向数据
+    gl.uniform4f(u_Color, 1.0, 0.0, 0.0, 1.0)
+    gl.drawArrays(gl.LINE_LOOP, 0, 4)
+    // 传入光的颜色和方向数据
+    gl.uniform4f(u_Color, 0.0, 0.0, 1.0, 1.0)
+    gl.drawArrays(gl.LINE_LOOP, 4, 4)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</script>
+</html>

@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Switch2</title>
+</head>
+<body>
+<canvas id="canvas" width="600" height="600" style="background-color: #0d72da"></canvas>
+</body>
+<script>
+const canvas = document.getElementById('canvas')
+const gl = canvas.getContext('webgl')
+
+const vertexShaderSource1 = `
+    attribute vec4 a_Position;
+    attribute vec2 a_TexCoord;//纹理坐标
+    varying vec2 v_TexCoord;//插值后纹理坐标
+//  uniform声明旋转矩阵变量
+    uniform mat4 mx;
+    uniform mat4 my;
+
+    void main() {
+        gl_Position = mx*my*a_Position;
+        v_TexCoord = a_TexCoord;
+    }
+`
+const fragShaderSource1 = `
+    precision highp float;
+    // 接收插值后的纹理坐标
+    varying vec2 v_TexCoord;
+    uniform sampler2D u_Sampler;
+    void main() {
+        // 采集纹素，逐片元赋值
+        gl_FragColor = texture2D(u_Sampler, v_TexCoord);
+    }
+`
+const vertexShaderSource2 = `
+    attribute vec4 a_Position;
+    attribute vec4 a_color;
+    attribute vec4 a_normal;
+
+    //  平行光颜色变量
+    uniform vec3 u_lightColor;
+    //  平行光方向
+    uniform vec3 u_lightDirection;
+
+    //  varying声明顶点颜色插值后变量
+    varying vec4 v_color;
+
+    //  uniform声明旋转矩阵变量mx、my
+    uniform mat4 mx;
+    uniform mat4 my;
+
+    void main() {
+        gl_Position = mx * my * a_Position;
+        // 顶点法向量进行矩阵变换，然后归一化
+        vec3 normal = normalize((mx * my * a_normal).xyz);
+        // 计算平行光方向向量和顶点法向量的点积
+        float dot = max(dot(u_lightDirection, normal), 0.0);
+        //  计算反射后的颜色
+        vec3 reflectedLight = u_lightColor * a_color.rgb * dot;
+        //  颜色插值计算
+        v_color = vec4(reflectedLight, a_color.a);
+    }
+`
+const fragShaderSource2 = `
+    precision lowp float;
+    varying vec4 v_color;
+    void main() {
+        gl_FragColor = v_color;
+    }
+`
+
+const program1 = initShader(gl, vertexShaderSource1, fragShaderSource1)
+const program2 = initShader(gl, vertexShaderSource2, fragShaderSource2)
+
+// program1
+const texturePosition = gl.getAttribLocation(program1, 'a_Position')
+const a_TexCoord = gl.getAttribLocation(program1, 'a_TexCoord')
+const u_Sampler = gl.getUniformLocation(program1, 'u_Sampler')
+const textureMx = gl.getUniformLocation(program1, 'mx')
+const textureMy = gl.getUniformLocation(program1, 'my')
+// program2
+const cubePosition = gl.getAttribLocation(program2, 'a_Position')
+const a_color = gl.getAttribLocation(program2, 'a_color')
+const a_normal = gl.getAttribLocation(program2, 'a_normal')
+const u_lightColor = gl.getUniformLocation(program2, 'u_lightColor')
+const u_lightDirection = gl.getUniformLocation(program2, 'u_lightDirection')
+const cubeMx = gl.getUniformLocation(program2, 'mx')
+const cubeMy = gl.getUniformLocation(program2, 'my')
+
+
+/**
+ * 纹理映射、立方体共用的旋转矩阵数据
+ **/
+const angle = Math.PI/6
+const sin = Math.sin(angle)
+const cos = Math.cos(angle)
+//
+const mxArr = new Float32Array([
+        1,0,0,0,
+        0,cos,-sin,0,
+        0,sin,cos,0,
+        0,0,0,1
+])
+const myArr = new Float32Array([
+        cos,0,-sin,0,
+        0,1,0,0,
+        sin,0,cos,0,
+        0,0,0,1
+])
+//
+const cubeData = new Float32Array([
+    .5,.5,.5,-.5,.5,.5,-.5,-.5,.5,.5,.5,.5,-.5,-.5,.5,.5,-.5,.5,      //面1
+    .5,.5,.5,.5,-.5,.5,.5,-.5,-.5,.5,.5,.5,.5,-.5,-.5,.5,.5,-.5,      //面2
+    .5,.5,.5,.5,.5,-.5,-.5,.5,-.5,.5,.5,.5,-.5,.5,-.5,-.5,.5,.5,      //面3
+    -.5,.5,.5,-.5,.5,-.5,-.5,-.5,-.5,-.5,.5,.5,-.5,-.5,-.5,-.5,-.5,.5,//面4
+    -.5,-.5,-.5,.5,-.5,-.5,.5,-.5,.5,-.5,-.5,-.5,.5,-.5,.5,-.5,-.5,.5,//面5
+    .5,-.5,-.5,-.5,-.5,-.5,-.5,.5,-.5,.5,-.5,-.5,-.5,.5,-.5,.5,.5,-.5 //面6
+])
+const colorData = new Float32Array([
+    1,0,0, 1,0,0, 1,0,0, 1,0,0, 1,0,0, 1,0,0,//红色——面1
+    1,0,0, 1,0,0, 1,0,0, 1,0,0, 1,0,0, 1,0,0,//红色——面2
+    1,0,0, 1,0,0, 1,0,0, 1,0,0, 1,0,0, 1,0,0,//红色——面3
+    1,0,0, 1,0,0, 1,0,0, 1,0,0, 1,0,0, 1,0,0,//红色——面4
+    1,0,0, 1,0,0, 1,0,0, 1,0,0, 1,0,0, 1,0,0,//红色——面5
+    1,0,0, 1,0,0, 1,0,0, 1,0,0, 1,0,0, 1,0,0 //红色——面6
+]);
+const normalData = new Float32Array([
+  0,0,1,0,0,1,0,0,1,0,0,1,0,0,1,0,0,1,//z轴正方向——面1
+  1,0,0,1,0,0,1,0,0,1,0,0,1,0,0,1,0,0,//x轴正方向——面2
+  0,1,0,0,1,0,0,1,0,0,1,0,0,1,0,0,1,0,//y轴正方向——面3
+  -1,0,0,-1,0,0,-1,0,0,-1,0,0,-1,0,0,-1,0,0,//x轴负方向——面4
+  0,-1,0,0,-1,0,0,-1,0,0,-1,0,0,-1,0,0,-1,0,//y轴负方向——面5
+  0,0,-1,0,0,-1,0,0,-1,0,0,-1,0,0,-1,0,0,-1//z轴负方向——面6
+]);
+
+/**纹理映射顶点数据**/
+const data=new Float32Array([
+    -0.4, 0.2,-0.51,//左上角——v0
+    -0.4,-0.2,-0.51,//左下角——v1
+    0.4,  0.2,-0.51,//右上角——v2
+    0.4, -0.2,-0.51//右下角——v3
+]);
+/**UV纹理坐标数据textureData**/
+const textureData = new Float32Array([
+    0,1,//左上角——uv0
+    0,0,//左下角——uv1
+    1,1,//右上角——uv2
+    1,0 //右下角——uv3
+]);
+
+const image = new Image()
+image.onload = texture
+image.src = 'glb.jpg'
+
+gl.enable(gl.DEPTH_TEST)
+
+
+function texture() {
+    const texture = gl.createTexture()
+    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true)
+    gl.activeTexture(gl.TEXTURE0)
+    gl.bindTexture(gl.TEXTURE_2D, texture)
+
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR)
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR)
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, image)
+
+    /**
+     执行useProgram()方法，GPU执行纹理映射着色器程序
+     **/
+    gl.useProgram(program1)
+//     调用函数vertexBuffer()，配置顶点数据
+    vertexBuffer(data, texturePosition, 3)
+    vertexBuffer(textureData, a_TexCoord, 2)
+    /**传入纹理图片旋转矩阵数据**/
+    gl.uniformMatrix4fv(textureMy, false, myArr)
+    gl.uniformMatrix4fv(textureMx, false, mxArr)
+    gl.uniform1i(u_Sampler, 0)
+//     执行绘画
+    gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4)
+  /**
+   执行useProgram()方法，切换着色器程序，重新配置GPU执行立方体着色器程序
+   **/
+    gl.useProgram(program2)
+//  调用函数vertexBuffer()，配置顶点数据
+    vertexBuffer(cubeData, cubePosition, 3)
+    vertexBuffer(colorData, a_color, 3)
+    vertexBuffer(normalData, a_normal, 3)
+//  传入立方体旋转矩阵数据
+    gl.uniformMatrix4fv(cubeMx, false, mxArr)
+    gl.uniformMatrix4fv(cubeMy, false, myArr)
+    //传入光的颜色和方向
+    gl.uniform3f(u_lightColor, 1.0, 1.0, 1.0)
+
+    const x = 1/Math.sqrt(15), y = 2/Math.sqrt(15), z = 3/Math.sqrt(15)
+    gl.uniform3f(u_lightDirection, x, y, -z)
+    gl.drawArrays(gl.TRIANGLES, 0, 36)
+
+
+
+
+}
+
+
+
+
+
+/**
+ * 顶点数据配置函数vertexBuffer()
+ * 顶点数据data
+ * 顶点位置position
+ * 间隔数量n
+ **/
+function vertexBuffer(data, position, n) {
+    const buffer = gl.createBuffer()
+    gl.bindBuffer(gl.ARRAY_BUFFER, buffer)
+    gl.bufferData(gl.ARRAY_BUFFER, data, gl.STATIC_DRAW)
+    gl.vertexAttribPointer(position, n, gl.FLOAT, false, 0, 0)
+    gl.enableVertexAttribArray(position)
+}
+
+
+
+function initShader(gl,vertexShaderSource,fragmentShaderSource){
+    const vertexShader = gl.createShader(gl.VERTEX_SHADER);//创建顶点着色器对象
+    const fragmentShader = gl.createShader(gl.FRAGMENT_SHADER);//创建片元着色器对象
+    gl.shaderSource(vertexShader,vertexShaderSource);//引入片元着色器源代码
+    gl.shaderSource(fragmentShader,fragmentShaderSource);//引入片元着色器源代码
+    gl.compileShader(vertexShader);//编译顶点着色器程序
+    gl.compileShader(fragmentShader);//编译片元着色器程序
+    const program = gl.createProgram();//创建程序对象program
+    gl.attachShader(program,vertexShader);//附着顶点着色器对象到程序对象program
+    gl.attachShader(program,fragmentShader);//附着片元着色器对象到程序对象program
+    gl.linkProgram(program);//链接程序对象program
+    //        gl.useProgram(program);//使用程序对象program(注释掉useProgram()方法调用)
+    return program;//返回程序program对象
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</script>
+</html>

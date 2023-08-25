@@ -30,7 +30,7 @@ const fragShaderSource = `
     //纹理图片像素数据
     uniform sampler2D u_Sampler;
     void main() {
-        gl_FragColor = texture2D(u_Sampler, v_TextCoord)
+        gl_FragColor = texture2D(u_Sampler, v_TextCoord);
     }
 `
 
@@ -51,7 +51,7 @@ const data = new Float32Array([
     0.5, -0.5//右下角——v3
 ])
 
-const textureDate = new Float32Array([
+const textureData = new Float32Array([
     0,1,//左上角--uv0
     0,0,//左下角--uv1
     1,1,//右上角--uv2
@@ -60,6 +60,55 @@ const textureDate = new Float32Array([
 /**
  * 加载纹理图像像素数据
  **/
+const image = new Image()
+image.src = 'texture.jpg'
+image.onload = texture
+
+const buffer = gl.createBuffer()
+gl.bindBuffer(gl.ARRAY_BUFFER, buffer)
+gl.bufferData(gl.ARRAY_BUFFER, data, gl.STATIC_DRAW)
+gl.vertexAttribPointer(a_Position, 2, gl.FLOAT, false, 0, 0)
+gl.enableVertexAttribArray(a_Position)
+/**
+ 创建缓冲区textureBuffer，向顶点着色器传入顶点纹理坐标数据textureData
+ **/
+const textureBuffer = gl.createBuffer()
+gl.bindBuffer(gl.ARRAY_BUFFER, textureBuffer)
+gl.bufferData(gl.ARRAY_BUFFER, textureData, gl.STATIC_DRAW)
+gl.vertexAttribPointer(a_TextCoord, 2, gl.FLOAT, false, 0, 0)
+gl.enableVertexAttribArray(a_TextCoord)
+
+function texture() {
+    const texture = gl.createTexture()//创建纹理图像缓冲区
+    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true)//纹理图片上下反转
+    gl.activeTexture(gl.TEXTURE0)//激活0号纹理单元TEXTURE0
+    gl.bindTexture(gl.TEXTURE_2D, texture)//绑定纹理缓冲区
+    //设置纹理贴图填充方式(纹理贴图像素尺寸大于顶点绘制区域像素尺寸)
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR)
+    //设置纹理贴图填充方式(纹理贴图像素尺寸小于顶点绘制区域像素尺寸)
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR)
+    //设置纹素格式，jpg格式对应gl.RGB
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, image)
+    gl.uniform1i(u_Sampler, 0)//纹理缓冲区单元TEXTURE0中的颜色数据传入片元着色器
+    // 进行绘制
+    gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4)
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
