@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Opacity</title>
+</head>
+<body>
+<canvas id="canvas" width="600" height="600" style="background-color: white"></canvas>
+</body>
+<script src="./js/initShader.js"></script>
+<script>
+const canvas = document.getElementById('canvas')
+const gl = canvas.getContext('webgl')
+
+const vertexShaderSource = `
+    attribute vec4 apos;
+    attribute vec4 a_color;
+    varying vec4 v_color;
+    void main() {
+        gl_Position = apos;
+        v_color = a_color;
+    }
+`
+const fragShaderSource = `
+    precision lowp float;
+    varying vec4 v_color;
+    void main() {
+        gl_FragColor = v_color;
+    }
+`
+const program = initShader(gl, vertexShaderSource, fragShaderSource)
+
+const aposLocation = gl.getAttribLocation(program, 'apos')
+const a_color = gl.getAttribLocation(program, 'a_color')
+
+const data = new Float32Array([
+    -.5,.5,.5,.5,.5,-.5,//红色三角形
+    -.7,.3,.3,.3,.3,-.7,//绿色三角形
+    -.3,.7,.7,.7,.7,-.3//蓝色三角形
+])
+const colorData = new Float32Array([
+    //红色，透明度。7
+    1,0,0,.7,
+    1,0,0,.7,
+    1,0,0,.7,
+    //绿色顶点，透明的.7
+    0,1,0,.7,
+    0,1,0,.7,
+    0,1,0,.7,
+    //蓝色顶点，透明的.7
+    0,0,1,.7,
+    0,0,1,.7,
+    0,0,1,.7,
+])
+// 创建缓冲区
+const colorBuffer = gl.createBuffer()
+gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer)
+gl.bufferData(gl.ARRAY_BUFFER, colorData, gl.STATIC_DRAW)
+gl.vertexAttribPointer(a_color, 4, gl.FLOAT, false, 0, 0)
+gl.enableVertexAttribArray(a_color)
+
+const buffer = gl.createBuffer()
+gl.bindBuffer(gl.ARRAY_BUFFER, buffer)
+gl.bufferData(gl.ARRAY_BUFFER, data, gl.STATIC_DRAW)
+gl.vertexAttribPointer(aposLocation, 2, gl.FLOAT, false, 0, 0)
+gl.enableVertexAttribArray(aposLocation)
+
+// 渲染管理α融合功能单元配置
+gl.enable(gl.BLEND)
+gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
+gl.drawArrays(gl.TRIANGLES, 0, 9)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</script>
+</html>
